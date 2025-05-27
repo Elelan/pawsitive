@@ -1,3 +1,4 @@
+// src/components/layout/Header.tsx
 "use client";
 
 import Link from 'next/link';
@@ -6,9 +7,11 @@ import Logo from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { initialCartItems } from '@/lib/mock-data'; // For initial count
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -17,9 +20,50 @@ const navItems = [
   // { href: '/deals', label: 'Deals' }, // Example future link
 ];
 
+const CART_COUNT_STORAGE_KEY = 'pawsitiveCartCount';
+
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const pathname = usePathname();
+
+  const updateCartCount = () => {
+    try {
+      const countStr = localStorage.getItem(CART_COUNT_STORAGE_KEY);
+      if (countStr !== null) {
+        setCartCount(parseInt(countStr, 10));
+      } else {
+        // Fallback to initial mock data if localStorage is empty
+        setCartCount(initialCartItems.reduce((sum, item) => sum + item.quantity, 0));
+      }
+    } catch (error) {
+        console.warn("Could not read cart count from localStorage", error);
+        setCartCount(initialCartItems.reduce((sum, item) => sum + item.quantity, 0));
+    }
+  };
+
+  useEffect(() => {
+    updateCartCount(); // Initial load
+
+    // Listen for custom 'storage' event dispatched from CartPage
+    window.addEventListener('storage', updateCartCount);
+    // Also listen for actual localStorage changes (for other tabs, though less critical here)
+    window.addEventListener('storage', (event) => {
+        if (event.key === CART_COUNT_STORAGE_KEY) {
+            updateCartCount();
+        }
+    });
+
+
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+      window.removeEventListener('storage', (event) => {
+        if (event.key === CART_COUNT_STORAGE_KEY) {
+            updateCartCount();
+        }
+    });
+    };
+  }, []);
 
   return (
     <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
@@ -49,9 +93,14 @@ export default function Header() {
                 className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
               />
             </div>
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/cart" aria-label="Shopping Cart">
                 <ShoppingCart className="h-6 w-6" />
+                {cartCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-2 -right-2 px-2 py-0.5 text-xs rounded-full">
+                    {cartCount}
+                  </Badge>
+                )}
               </Link>
             </Button>
             <Button variant="ghost" size="icon" asChild>

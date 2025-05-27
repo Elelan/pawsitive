@@ -29,11 +29,11 @@ export default function HomePage() {
           </div>
           <div className="relative h-64 md:h-96">
             <Image
-              src="https://placehold.co/600x400.png" // Replace with a hero image
-              alt="Happy pets"
+              src="https://placehold.co/800x500.png" // Updated placeholder size
+              alt="Happy pets playing"
               fill
               className="object-contain rounded-lg"
-              data-ai-hint="happy pets"
+              data-ai-hint="dog cat" // Updated hint
               priority
             />
           </div>
@@ -73,7 +73,7 @@ export default function HomePage() {
                 alt="New pet products"
                 fill
                 className="object-cover rounded-lg"
-                data-ai-hint="new products"
+                data-ai-hint="new pet products" // More specific hint
               />
           </div>
         </div>

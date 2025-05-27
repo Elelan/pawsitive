@@ -23,7 +23,7 @@ export const mockProducts: Product[] = [
     stock: 50,
     brand: 'Pawsitive Nutrition',
     features: ['Real chicken as first ingredient', 'No artificial colors or flavors', 'Supports healthy digestion'],
-    dataAiHint: "dog food"
+    dataAiHint: "dog kibble"
   },
   {
     id: '2',
@@ -38,7 +38,7 @@ export const mockProducts: Product[] = [
     stock: 100,
     brand: 'Feline Finest',
     features: ['Grain-free', 'Organic salmon', 'Rich in Omega-3 & Omega-6'],
-    dataAiHint: "cat food"
+    dataAiHint: "cat pate"
   },
   {
     id: '3',
@@ -53,7 +53,7 @@ export const mockProducts: Product[] = [
     stock: 30,
     brand: 'Playful Pup',
     features: ['Durable plastic', 'Adjustable difficulty', 'Dishwasher safe'],
-    dataAiHint: "dog toy"
+    dataAiHint: "dog puzzle"
   },
   {
     id: '4',
@@ -68,7 +68,7 @@ export const mockProducts: Product[] = [
     stock: 20,
     brand: 'Comfy Paws',
     features: ['Orthopedic memory foam', 'Water-resistant liner', 'Non-slip bottom'],
-    dataAiHint: "dog bed"
+    dataAiHint: "dog bed large"
   },
   {
     id: '5',
@@ -83,7 +83,7 @@ export const mockProducts: Product[] = [
     stock: 75,
     brand: 'Active Kitty',
     features: ['Natural feathers', 'Flexible wand', 'Comfortable grip'],
-    dataAiHint: "cat toy"
+    dataAiHint: "cat toy feather"
   },
   {
     id: '6',
@@ -113,7 +113,7 @@ export const mockProducts: Product[] = [
     stock: 60,
     brand: 'Critter Comforts',
     features: ['100% natural Timothy hay', 'Supports dental health', 'Dust-extracted'],
-    dataAiHint: "animal hay"
+    dataAiHint: "timothy hay"
   },
   {
     id: '8',
@@ -137,6 +137,13 @@ export const mockReviews: Review[] = [
   { id: 'r2', productId: '1', userId: 'u2', userName: 'John D.', rating: 4, comment: 'Good quality food, a bit pricey but worth it.', createdAt: '2023-09-25' },
   { id: 'r3', productId: '2', userId: 'u3', userName: 'CatLover22', rating: 5, comment: 'My picky cat actually eats this! Amazing!', createdAt: '2023-10-05' },
 ];
+
+// Mock initial cart items
+export const initialCartItems: CartItem[] = [
+  { product: mockProducts[0], quantity: 1 },
+  { product: mockProducts[2], quantity: 2 },
+];
+
 
 // Mock function for AI Smart Cart suggestions
 export const getSmartCartSuggestions = async (cartItems: CartItem[]): Promise<Product[]> => {

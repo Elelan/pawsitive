@@ -1,24 +1,19 @@
+// src/app/cart/page.tsx
 "use client"; // For useState, useEffect, event handlers
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { CartItem as CartItemType, Product } from '@/lib/types';
-import { mockProducts, getSmartCartSuggestions } from '@/lib/mock-data';
+import { getSmartCartSuggestions, initialCartItems } from '@/lib/mock-data'; // Import initialCartItems
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, PlusCircle, MinusCircle, Gift, AlertTriangle, ShoppingBag } from 'lucide-react';
+import { Trash2, PlusCircle, MinusCircle, Gift, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import ProductCard from '@/components/products/ProductCard'; // Re-use ProductCard for suggestions
 
-
-// Mock cart state management (replace with actual context/store in a real app)
-const initialCartItems: CartItemType[] = [
-  { product: mockProducts[0], quantity: 1 },
-  { product: mockProducts[2], quantity: 2 },
-];
+const CART_COUNT_STORAGE_KEY = 'pawsitiveCartCount';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItemType[]>(initialCartItems);
@@ -46,6 +41,17 @@ export default function CartPage() {
     fetchSuggestions();
   }, [cartItems, toast]);
 
+  useEffect(() => {
+    // Update localStorage when cartItems change
+    try {
+      localStorage.setItem(CART_COUNT_STORAGE_KEY, cartItems.reduce((sum, item) => sum + item.quantity, 0).toString());
+      // Dispatch a custom event to notify other components like the header
+      window.dispatchEvent(new CustomEvent('storage'));
+    } catch (error) {
+      console.warn("Could not update cart count in localStorage", error);
+    }
+  }, [cartItems]);
+
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) {
       removeItem(productId);
@@ -65,6 +71,22 @@ export default function CartPage() {
         toast({ title: "Item Removed", description: `${removedItem.product.name} removed from cart.` });
     }
   };
+  
+  const addSuggestedItemToCart = (product: Product) => {
+    setCartItems(prevItems => {
+        const existingItem = prevItems.find(item => item.product.id === product.id);
+        if (existingItem) {
+            return prevItems.map(item =>
+                item.product.id === product.id
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item
+            );
+        }
+        return [...prevItems, { product, quantity: 1 }];
+    });
+    toast({ title: "Added to cart!", description: `${product.name} added.` });
+  };
+
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const taxRate = 0.08; // Example tax rate
@@ -175,7 +197,6 @@ export default function CartPage() {
               ) : suggestedProducts.length > 0 ? (
                 <div className="space-y-4">
                   {suggestedProducts.map(product => (
-                    // Simplified display for suggestions. Could use a smaller ProductCard variant.
                     <div key={product.id} className="flex items-center gap-3 border p-3 rounded-md hover:shadow-md transition-shadow">
                         <div className="relative w-16 h-16 aspect-square rounded-md overflow-hidden shrink-0">
                             <Image src={product.imageUrl} alt={product.name} fill sizes="64px" className="object-cover" data-ai-hint={product.dataAiHint || "suggested item"} />
@@ -184,7 +205,7 @@ export default function CartPage() {
                             <Link href={`/products/${product.id}`} className="text-sm font-medium hover:text-primary">{product.name}</Link>
                             <p className="text-xs text-primary font-semibold">${product.price.toFixed(2)}</p>
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => { /* Add to cart logic */ toast({title: "Added to cart!", description: `${product.name} added.`}) }}>Add</Button>
+                        <Button size="sm" variant="outline" onClick={() => addSuggestedItemToCart(product)}>Add</Button>
                     </div>
                   ))}
                 </div>
