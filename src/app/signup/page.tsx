@@ -1,26 +1,31 @@
+
 "use client";
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import Logo from '@/components/icons/Logo';
-import { useToast } from '@/hooks/use-toast';
-import { PawPrint } from 'lucide-react';
-
+import { PawPrint, UserPlus } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function SignUpPage() {
-  const { toast } = useToast();
+  const { login, loading, currentUser } = useAuth(); // Using login to simulate signup and login
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock signup logic
-    toast({
-      title: "Signup Attempted",
-      description: "Signup functionality is not implemented in this demo.",
-    });
+  if (loading) {
+    return <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">Loading...</div>;
+  }
+
+  if (currentUser) {
+    router.push('/account'); // Redirect if already logged in
+    return null;
+  }
+
+  // Simplified signup: just logs in as a user
+  const handleSignUpAsUser = () => {
+    login('user', 'newuser@pawsitive.com'); // Mock email
   };
+
   return (
     <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
       <Card className="w-full max-w-md shadow-xl">
@@ -29,28 +34,12 @@ export default function SignUpPage() {
           <CardTitle className="text-3xl font-bold">Create Your Account</CardTitle>
           <CardDescription>Join Pawsitive Cart and give your pet the best!</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" type="text" placeholder="John Doe" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input id="confirmPassword" type="password" required />
-            </div>
-            <Button type="submit" className="w-full">
-              Sign Up
+        <CardContent className="space-y-6">
+            {/* Removed traditional form for mock signup */}
+            <Button onClick={handleSignUpAsUser} className="w-full" size="lg">
+                <UserPlus className="mr-2 h-5 w-5" /> Sign Up as User
             </Button>
-          </form>
+            {/* In a real app, you'd have input fields for name, email, password etc. */}
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-2">
           <p className="text-sm text-muted-foreground">

@@ -1,26 +1,25 @@
+
 "use client";
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import Logo from '@/components/icons/Logo';
-import { useToast } from '@/hooks/use-toast';
-import { PawPrint } from 'lucide-react';
-
+import { PawPrint, UserCog, UserCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const { toast } = useToast();
+  const { login, loading, currentUser } = useAuth();
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock login logic
-    toast({
-      title: "Login Attempted",
-      description: "Login functionality is not implemented in this demo.",
-    });
-  };
+  if (loading) {
+    return <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">Loading...</div>;
+  }
+
+  if (currentUser) {
+    router.push(currentUser.role === 'admin' ? '/admin' : '/account');
+    return null; 
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
@@ -30,25 +29,14 @@ export default function LoginPage() {
           <CardTitle className="text-3xl font-bold">Welcome Back!</CardTitle>
           <CardDescription>Sign in to access your Pawsitive Cart account.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" required />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input id="password" type="password" required />
-            </div>
-            <Button type="submit" className="w-full">
-              Sign In
-            </Button>
-          </form>
+        <CardContent className="space-y-6">
+          {/* Removed traditional form for mock login */}
+          <Button onClick={() => login('user')} className="w-full" size="lg">
+            <UserCircle className="mr-2 h-5 w-5" /> Login as User
+          </Button>
+          <Button onClick={() => login('admin')} variant="outline" className="w-full" size="lg">
+             <UserCog className="mr-2 h-5 w-5" /> Login as Admin
+          </Button>
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-2">
           <p className="text-sm text-muted-foreground">
@@ -57,6 +45,9 @@ export default function LoginPage() {
               Sign Up
             </Link>
           </p>
+           <Link href="#" className="text-sm text-primary hover:underline">
+              Forgot password?
+            </Link>
         </CardFooter>
       </Card>
     </div>

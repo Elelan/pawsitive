@@ -1,23 +1,33 @@
+
 // src/components/layout/Header.tsx
 "use client";
 
 import Link from 'next/link';
-import { ShoppingCart, User, Search, Menu } from 'lucide-react';
+import { ShoppingCart, User, Search, Menu, LogOut, ShieldCheck, UserCircle } from 'lucide-react';
 import Logo from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { initialCartItems } from '@/lib/mock-data'; // For initial count
+import { useAuth } from '@/hooks/useAuth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Products' },
   { href: '/categories', label: 'Categories' },
-  // { href: '/deals', label: 'Deals' }, // Example future link
 ];
 
 const CART_COUNT_STORAGE_KEY = 'pawsitiveCartCount';
@@ -26,6 +36,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const pathname = usePathname();
+  const { currentUser, logout, isAdmin, isAuthenticated } = useAuth();
 
   const updateCartCount = () => {
     try {
@@ -33,7 +44,6 @@ export default function Header() {
       if (countStr !== null) {
         setCartCount(parseInt(countStr, 10));
       } else {
-        // Fallback to initial mock data if localStorage is empty
         setCartCount(initialCartItems.reduce((sum, item) => sum + item.quantity, 0));
       }
     } catch (error) {
@@ -43,25 +53,19 @@ export default function Header() {
   };
 
   useEffect(() => {
-    updateCartCount(); // Initial load
+    updateCartCount(); 
 
-    // Listen for custom 'storage' event dispatched from CartPage
     window.addEventListener('storage', updateCartCount);
-    // Also listen for actual localStorage changes (for other tabs, though less critical here)
-    window.addEventListener('storage', (event) => {
+    const handleStorageChange = (event: StorageEvent) => {
         if (event.key === CART_COUNT_STORAGE_KEY) {
             updateCartCount();
         }
-    });
-
+    };
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', updateCartCount);
-      window.removeEventListener('storage', (event) => {
-        if (event.key === CART_COUNT_STORAGE_KEY) {
-            updateCartCount();
-        }
-    });
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -83,8 +87,19 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  pathname.startsWith('/admin') ? "text-primary" : "text-foreground/70"
+                )}
+              >
+                Admin Panel
+              </Link>
+            )}
           </nav>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="hidden sm:flex items-center space-x-2 bg-background rounded-md border border-input px-2">
               <Search className="h-5 w-5 text-muted-foreground" />
               <Input
@@ -103,11 +118,42 @@ export default function Header() {
                 )}
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/account" aria-label="My Account">
-                <User className="h-6 w-6" />
-              </Link>
-            </Button>
+            
+            {isAuthenticated ? (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="My Account Menu">
+                            {isAdmin ? <ShieldCheck className="h-6 w-6 text-primary" /> : <UserCircle className="h-6 w-6" />}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>My Account {isAdmin && "(Admin)"}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/account"><User className="mr-2 h-4 w-4" /> Profile</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/account/orders"><ShoppingCart className="mr-2 h-4 w-4" /> Orders</Link>
+                        </DropdownMenuItem>
+                        {isAdmin && (
+                            <DropdownMenuItem asChild>
+                               <Link href="/admin"><ShieldCheck className="mr-2 h-4 w-4" /> Admin Dashboard</Link>
+                            </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={logout} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                            <LogOut className="mr-2 h-4 w-4" /> Logout
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ) : (
+                 <Button variant="ghost" size="icon" asChild>
+                    <Link href="/login" aria-label="Login">
+                        <User className="h-6 w-6" />
+                    </Link>
+                </Button>
+            )}
+
             <div className="md:hidden">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -128,18 +174,38 @@ export default function Header() {
                     </div>
                     <nav className="mt-8 flex flex-col space-y-4">
                       {navItems.map((item) => (
-                        <Link
-                          key={item.label}
-                          href={item.href}
-                          className={cn(
-                            "text-lg font-medium transition-colors hover:text-primary",
-                            pathname === item.href ? "text-primary" : "text-foreground/70"
-                          )}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          {item.label}
-                        </Link>
+                        <SheetClose asChild key={item.label}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "text-lg font-medium transition-colors hover:text-primary",
+                              pathname === item.href ? "text-primary" : "text-foreground/70"
+                            )}
+                          >
+                            {item.label}
+                          </Link>
+                        </SheetClose>
                       ))}
+                      {isAdmin && (
+                         <SheetClose asChild>
+                            <Link
+                                href="/admin"
+                                className={cn(
+                                "text-lg font-medium transition-colors hover:text-primary",
+                                pathname.startsWith('/admin') ? "text-primary" : "text-foreground/70"
+                                )}
+                            >
+                                Admin Panel
+                            </Link>
+                        </SheetClose>
+                      )}
+                      {isAuthenticated && (
+                        <SheetClose asChild>
+                           <Button variant="outline" onClick={logout} className="w-full mt-4">
+                             <LogOut className="mr-2 h-5 w-5" /> Logout
+                           </Button>
+                        </SheetClose>
+                      )}
                     </nav>
                   </div>
                 </SheetContent>
