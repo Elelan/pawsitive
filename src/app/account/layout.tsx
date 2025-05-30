@@ -3,7 +3,7 @@
 
 import AccountSidebar from '@/components/layout/AccountSidebar';
 import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth.tsx';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 

@@ -5,7 +5,7 @@ import './globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from '@/hooks/useAuth';
+import { AuthProvider } from '@/hooks/useAuth.tsx';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

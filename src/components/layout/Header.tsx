@@ -13,7 +13,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { initialCartItems } from '@/lib/mock-data'; // For initial count
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
