@@ -24,10 +24,6 @@ export async function POST(req: NextRequest) {
 
     const { name, email, password } = validation.data;
 
-    // Check for existing user is implicitly handled by Prisma unique constraint,
-    // but an explicit check can be cleaner if preferred.
-    // For now, we rely on Prisma's error for this.
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
@@ -39,32 +35,31 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _removedPassword, ...userWithoutPassword } = user;
     return NextResponse.json(userWithoutPassword, { status: 201 });
 
   } catch (error) {
-    console.error('Signup API error:', error); // Log the full error object
+    // Log the full error object for detailed debugging on the server
+    console.error('Signup API error:', error); 
 
     if (error instanceof PrismaClientKnownRequestError) {
       // Check for unique constraint violation (e.g., email already exists)
       if (error.code === 'P2002') {
-        // The `meta.target` field can tell you which field caused the error
         const target = error.meta?.target as string[] | undefined;
-        let fieldMessage = "A user with this information already exists.";
-        if (target && target.includes('email')) {
-            fieldMessage = 'This email address is already registered.';
-        }
-        return NextResponse.json({ message: fieldMessage, field: target ? target.join(', ') : 'unknown' }, { status: 409 }); // 409 Conflict
+        let fieldMessage = 'This email address is already registered.';
+        // if (target && target.includes('email')) { // This check is a bit redundant if P2002 on User.email is the only unique constraint
+        //     fieldMessage = 'This email address is already registered.';
+        // }
+        return NextResponse.json({ message: fieldMessage, field: 'email' }, { status: 409 }); // 409 Conflict
       }
     }
 
     // For other errors or if it's not a Prisma error we specifically handle
     let errorMessage = 'An unexpected error occurred during signup.';
-    if (error instanceof Error && error.message) {
-      // You might want to be careful about exposing raw error messages to the client
-      // For debugging, it can be helpful, but sanitize for production.
-      // errorMessage = error.message; // Potentially too verbose or sensitive for client
-    }
+    // Avoid exposing raw error messages to the client in production for security
+    // if (error instanceof Error && process.env.NODE_ENV === 'development') {
+    //   errorMessage = error.message; 
+    // }
     
     return NextResponse.json({ message: errorMessage, details: error instanceof Error ? error.toString() : 'Unknown error structure' }, { status: 500 });
   }

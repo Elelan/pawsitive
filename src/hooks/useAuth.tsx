@@ -81,14 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const responseBody = await response.json();
 
       if (response.ok) {
-        // After successful signup, proceed to login to establish session via cookie
+        // After successful signup, responseBody is the created user (without password)
+        // Proceed to login to establish session via cookie
         const loginResult = await login({email: details.email, password: details.password});
-        return { user: loginResult };
+        if (loginResult) {
+          return { user: loginResult };
+        } else {
+          // This case means signup in DB was OK, but immediate login failed.
+          return { user: null, error: "Account created, but automatic login failed. Please try logging in manually." };
+        }
       } else {
         // Handle specific error messages from API
         console.error("Signup API failed with status:", response.status, "Body:", responseBody);
         const errorMessage = responseBody.message || 'Signup failed. Please try again.';
-        const errorDetails = responseBody.errors || (responseBody.field ? { [responseBody.field] : [errorMessage] } : undefined);
+        const errorDetails = responseBody.errors || (responseBody.field ? { [responseBody.field]: [errorMessage] } : undefined);
         return { user: null, error: errorDetails || errorMessage };
       }
     } catch (error) {
