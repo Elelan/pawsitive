@@ -46,45 +46,43 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(userWithoutPassword, { status: 201 });
 
   } catch (error) {
-    // Log the full error object for detailed debugging on the server
-    console.error('Signup API error object:', error); 
-    
+    console.error('Signup API error object:', error); // THIS IS THE MOST IMPORTANT LOG TO CHECK ON YOUR SERVER
+
     let status = 500;
-    let responseMessage = 'An unexpected error occurred during signup. Please try again later.';
+    // Updated message to be more direct
+    let responseMessage = 'An unexpected error occurred during signup. Please check server logs for details.';
     let fieldErrors: { [key: string]: string[] } | undefined = undefined;
 
     if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
-        // Unique constraint violation
         status = 409; // Conflict
         responseMessage = 'This email address is already registered.';
         // Assuming 'target' can indicate the field. Email is usually the main unique field here.
         if (error.meta?.target && (error.meta.target as string[]).includes('email')) {
           fieldErrors = { email: [responseMessage] };
         }
-        console.warn(`Signup failed: Prisma P2002 error (Unique Constraint). Input email (if available): ${validatedData?.email}. Meta: ${JSON.stringify(error.meta)}`);
+        console.warn(`Signup failed due to Prisma P2002 (Unique Constraint). Email: ${validatedData?.email}. Meta: ${JSON.stringify(error.meta)}`);
       } else {
         // Other Prisma-specific errors
-        responseMessage = 'A database error occurred during signup.';
+        responseMessage = 'A database error occurred during signup. Please check server logs for details.';
         console.error('Prisma specific error during signup:', { code: error.code, meta: error.meta, clientVersion: error.clientVersion });
       }
     } else if (error instanceof Error) {
-      // Generic Error instance
-      if (error.message) {
-         // Avoid sending overly technical or sensitive error messages to the client directly
-         // Log the specific error.message on the server, but send a more generic one to the client for non-Prisma errors unless explicitly safe.
-        console.error('Generic error message:', error.message);
-        // responseMessage = error.message; // Potentially too much info for client
-      }
+      // For generic errors, log the message but keep client response generic for security.
+      console.error('Generic error during signup:', error.message, error.stack);
+      // responseMessage might remain the default "An unexpected error..."
+    } else {
+      // Non-Error object thrown
+      console.error('A non-Error object was thrown during signup:', error);
     }
-    // For other types of errors, the default responseMessage and status 500 will be used.
 
     const errorResponse: { message: string; errors?: { [key: string]: string[] } } = { message: responseMessage };
     if (fieldErrors) {
       errorResponse.errors = fieldErrors;
     }
     
+    // Added log to confirm what response is being formed on the server before sending
+    console.log(`Returning error response from signup API: status=${status}, body=${JSON.stringify(errorResponse)}`);
     return NextResponse.json(errorResponse, { status });
   }
 }
-
