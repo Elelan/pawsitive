@@ -1,41 +1,29 @@
 import ProductList from '@/components/products/ProductList';
-import { mockProducts, mockCategories } from '@/lib/mock-data';
+import { getCategoryDetails, getProductsByCategory } from '@/lib/data-service'; // Updated imports
 import type { Product, Category } from '@/lib/types';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { notFound } from 'next/navigation';
 
-async function getCategoryDetails(id: string): Promise<Category | undefined> {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 100));
-  // The ID in mockCategories is like 'cat-food', the page param might be 'Dog%20Food'
-  // For robust matching, consider slugs or more consistent IDs. Here, we'll find by name.
-  const decodedId = decodeURIComponent(id);
-  return mockCategories.find(cat => cat.name.toLowerCase() === decodedId.toLowerCase() || cat.id === decodedId);
-}
+// This function can be used to generate static paths if using SSG,
+// but it needs to fetch from DB now.
+// export async function generateStaticParams() {
+//   const categories = await getCategories(); // Assuming getCategories is available
+//   return categories.map((category) => ({
+//     id: category.id, // or category.name if using name in URL
+//   }));
+// }
 
-async function getProductsByCategory(categoryName: string): Promise<Product[]> {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 100));
-  return mockProducts.filter(product => product.category.toLowerCase() === categoryName.toLowerCase());
-}
 
 export default async function CategoryPage({ params }: { params: { id: string } }) {
-  const category = await getCategoryDetails(params.id);
+  const category = await getCategoryDetails(params.id); // params.id could be name or ObjectId string
 
   if (!category) {
-    return (
-      <div className="container mx-auto py-12 text-center">
-        <h1 className="text-2xl font-semibold">Category Not Found</h1>
-        <p className="text-muted-foreground mt-2">The category you're looking for doesn't exist.</p>
-        <Button variant="link" asChild className="mt-4">
-            <Link href="/categories"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Categories</Link>
-        </Button>
-      </div>
-    );
+    notFound();
   }
 
-  const products = await getProductsByCategory(category.name);
+  const products = await getProductsByCategory(category.name); // Fetches by category name
 
   return (
     <div className="container mx-auto py-8 md:py-12">
@@ -60,11 +48,4 @@ export default async function CategoryPage({ params }: { params: { id: string } 
       </div>
     </div>
   );
-}
-
-// This function can be used to generate static paths if using SSG
-export async function generateStaticParams() {
-  return mockCategories.map((category) => ({
-    id: encodeURIComponent(category.id), // or category.name if using name in URL
-  }));
 }

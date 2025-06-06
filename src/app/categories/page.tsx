@@ -1,10 +1,12 @@
 import CategoryShowcase from '@/components/products/CategoryShowcase';
-import { mockCategories } from '@/lib/mock-data';
+import { getCategories } from '@/lib/data-service'; // Updated import
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Tag } from 'lucide-react';
 
-export default function AllCategoriesPage() {
+export default async function AllCategoriesPage() {
+  const categories = await getCategories();
+
   return (
     <div className="container mx-auto py-8 md:py-12">
       <div className="text-center mb-12">
@@ -17,7 +19,7 @@ export default function AllCategoriesPage() {
         </p>
       </div>
       
-      <CategoryShowcase categories={mockCategories} title="Browse Our Categories" />
+      <CategoryShowcase categories={categories} title="Browse Our Categories" />
 
       <div className="mt-16 text-center">
         <p className="text-muted-foreground mb-4">Can't find what you're looking for?</p>

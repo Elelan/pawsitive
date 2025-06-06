@@ -1,14 +1,14 @@
 import ProductList from '@/components/products/ProductList';
 import CategoryShowcase from '@/components/products/CategoryShowcase';
-import { mockProducts, mockCategories } from '@/lib/mock-data';
+import { getFeaturedProducts, getCategories } from '@/lib/data-service';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Zap } from 'lucide-react';
 
-export default function HomePage() {
-  const featuredProducts = mockProducts.slice(0, 4); // Show first 4 products as featured
-  const displayedCategories = mockCategories.slice(0, 6);
+export default async function HomePage() {
+  const featuredProducts = await getFeaturedProducts(4);
+  const displayedCategories = await getCategories(); // Fetch all, CategoryShowcase might limit display or add a "view all" link. Consider limiting here if too many: .slice(0,6)
 
   return (
     <div className="space-y-16">
@@ -29,11 +29,11 @@ export default function HomePage() {
           </div>
           <div className="relative h-64 md:h-96">
             <Image
-              src="https://placehold.co/800x500.png" // Updated placeholder size
+              src="https://placehold.co/800x500.png"
               alt="Happy pets playing"
               fill
               className="object-contain rounded-lg"
-              data-ai-hint="dog cat" // Updated hint
+              data-ai-hint="dog cat playing"
               priority
             />
           </div>
@@ -52,7 +52,7 @@ export default function HomePage() {
       </section>
 
       {/* Categories Section */}
-      <CategoryShowcase categories={displayedCategories} />
+      <CategoryShowcase categories={displayedCategories.slice(0,6)} /> {/* Displaying first 6, CategoryShowcase has "View All" */}
 
       {/* Special Offer/Call to Action Section */}
       <section className="bg-card p-8 md:p-12 rounded-xl shadow-lg">
@@ -73,7 +73,7 @@ export default function HomePage() {
                 alt="New pet products"
                 fill
                 className="object-cover rounded-lg"
-                data-ai-hint="new pet products" // More specific hint
+                data-ai-hint="new pet products"
               />
           </div>
         </div>

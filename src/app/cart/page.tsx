@@ -1,11 +1,12 @@
 // src/app/cart/page.tsx
-"use client"; // For useState, useEffect, event handlers
+"use client"; 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { CartItem as CartItemType, Product } from '@/lib/types';
-import { getSmartCartSuggestions, initialCartItems } from '@/lib/mock-data'; // Import initialCartItems
+// import { getSmartCartSuggestions } from '@/lib/mock-data'; // Old import
+import { getSmartCartSuggestions, getProductById } from '@/lib/data-service'; // New import
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -13,44 +14,73 @@ import { Separator } from '@/components/ui/separator';
 import { Trash2, PlusCircle, MinusCircle, Gift, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const CART_COUNT_STORAGE_KEY = 'pawsitiveCartCount';
+const CART_STORAGE_KEY = 'pawsitiveCartItems'; // For storing actual cart items
+const CART_COUNT_STORAGE_KEY = 'pawsitiveCartCount'; // Kept for header, but cart itself is source of truth
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItemType[]>(initialCartItems);
+  const [cartItems, setCartItems] = useState<CartItemType[]>([]);
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isLoadingCart, setIsLoadingCart] = useState(true);
   const { toast } = useToast();
 
+  // Load cart from localStorage
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (cartItems.length > 0) {
-        setIsLoadingSuggestions(true);
-        try {
-          const suggestions = await getSmartCartSuggestions(cartItems);
-          setSuggestedProducts(suggestions);
-        } catch (error) {
-          console.error("Error fetching smart cart suggestions:", error);
-          toast({ title: "Error", description: "Could not load smart suggestions.", variant: "destructive" });
-        } finally {
-          setIsLoadingSuggestions(false);
-        }
-      } else {
-        setSuggestedProducts([]);
+    setIsLoadingCart(true);
+    try {
+      const storedCart = localStorage.getItem(CART_STORAGE_KEY);
+      if (storedCart) {
+        setCartItems(JSON.parse(storedCart));
       }
-    };
-    fetchSuggestions();
+    } catch (error) {
+      console.error("Error loading cart from localStorage:", error);
+      // Potentially clear corrupted cart storage
+      // localStorage.removeItem(CART_STORAGE_KEY);
+    } finally {
+      setIsLoadingCart(false);
+    }
+  }, []);
+
+  // Update localStorage and cart count when cartItems change
+  useEffect(() => {
+    if (!isLoadingCart) { // Only save after initial load
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+        const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+        localStorage.setItem(CART_COUNT_STORAGE_KEY, totalQuantity.toString());
+        window.dispatchEvent(new CustomEvent('storage', { detail: { key: CART_COUNT_STORAGE_KEY } })); // For header
+        window.dispatchEvent(new CustomEvent('cartUpdated')); // Generic cart update event
+      } catch (error) {
+        console.warn("Could not update cart in localStorage", error);
+      }
+    }
+  }, [cartItems, isLoadingCart]);
+
+
+  const fetchSuggestions = useCallback(async () => {
+    if (cartItems.length > 0) {
+      setIsLoadingSuggestions(true);
+      try {
+        const cartForSuggestions = cartItems.map(item => ({ productId: item.product.id, quantity: item.quantity }));
+        const suggestions = await getSmartCartSuggestions(cartForSuggestions);
+        setSuggestedProducts(suggestions);
+      } catch (error) {
+        console.error("Error fetching smart cart suggestions:", error);
+        toast({ title: "Error", description: "Could not load smart suggestions.", variant: "destructive" });
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    } else {
+      setSuggestedProducts([]);
+    }
   }, [cartItems, toast]);
 
   useEffect(() => {
-    // Update localStorage when cartItems change
-    try {
-      localStorage.setItem(CART_COUNT_STORAGE_KEY, cartItems.reduce((sum, item) => sum + item.quantity, 0).toString());
-      // Dispatch a custom event to notify other components like the header
-      window.dispatchEvent(new CustomEvent('storage'));
-    } catch (error) {
-      console.warn("Could not update cart count in localStorage", error);
+    if(!isLoadingCart){ // Fetch suggestions after cart is loaded
+        fetchSuggestions();
     }
-  }, [cartItems]);
+  }, [fetchSuggestions, isLoadingCart]);
+
 
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -72,26 +102,44 @@ export default function CartPage() {
     }
   };
   
-  const addSuggestedItemToCart = (product: Product) => {
+  const addSuggestedItemToCart = async (productToAdd: Product) => {
+    // Fetch full product details if not already robust in 'productToAdd'
+    // (getSmartCartSuggestions should return full Product objects)
+    const productDetails = productToAdd.description ? productToAdd : await getProductById(productToAdd.id);
+
+    if (!productDetails) {
+        toast({ title: "Error", description: "Could not add item to cart.", variant: "destructive" });
+        return;
+    }
+
     setCartItems(prevItems => {
-        const existingItem = prevItems.find(item => item.product.id === product.id);
+        const existingItem = prevItems.find(item => item.product.id === productDetails.id);
         if (existingItem) {
             return prevItems.map(item =>
-                item.product.id === product.id
+                item.product.id === productDetails.id
                     ? { ...item, quantity: item.quantity + 1 }
                     : item
             );
         }
-        return [...prevItems, { product, quantity: 1 }];
+        return [...prevItems, { product: productDetails, productId: productDetails.id, quantity: 1 }];
     });
-    toast({ title: "Added to cart!", description: `${product.name} added.` });
+    toast({ title: "Added to cart!", description: `${productDetails.name} added.` });
   };
 
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const taxRate = 0.08; // Example tax rate
+  const taxRate = 0.08; 
   const taxes = subtotal * taxRate;
   const total = subtotal + taxes;
+
+  if (isLoadingCart) {
+    return (
+      <div className="container mx-auto py-12 text-center">
+        <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground mb-6 animate-pulse" />
+        <h1 className="text-3xl font-bold text-primary mb-4">Loading Your Cart...</h1>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -182,7 +230,6 @@ export default function CartPage() {
             </CardFooter>
           </Card>
 
-          {/* AI Smart Cart Suggestions */}
           <Card className="shadow-lg rounded-lg">
             <CardHeader>
               <CardTitle className="text-xl flex items-center">
@@ -212,6 +259,7 @@ export default function CartPage() {
               ) : (
                  cartItems.length > 0 && <p className="text-muted-foreground text-center py-4">No specific suggestions right now, but check out our <Link href="/products?sort=popular" className="text-primary hover:underline">popular items</Link>!</p>
               )}
+               {!cartItems.length && <p className="text-muted-foreground text-center py-4">Add items to your cart to see suggestions!</p>}
             </CardContent>
           </Card>
         </div>
