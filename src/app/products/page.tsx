@@ -1,3 +1,4 @@
+
 import ProductList from '@/components/products/ProductList';
 import { getProducts, getCategories } from '@/lib/data-service'; // Updated import
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import FilterLinkInput from '@/components/products/FilterLinkInput'; // Import the new Client Component
 
 const petTypes = ['dog', 'cat', 'bird', 'fish', 'small_animal', 'reptile'];
 
@@ -32,7 +34,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { [
       </div>
 
       {/* Filters and Search */}
-      {/* TODO: This form needs to be functional, likely by navigating with query params on submit/change */}
+      {/* This form needs to be functional, likely by navigating with query params on submit/change */}
       <form method="GET" action="/products" className="mb-8 p-6 bg-card rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div className="relative">
@@ -83,6 +85,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: { [
                         </div>
                       ))}
                   </FilterSection>
+                  {/* The button inside sheet should ideally be part of a form or trigger client-side navigation with params */}
                   <Button type="submit" className="w-full mt-4">Apply Filters</Button>
                 </div>
               </SheetContent>
@@ -163,13 +166,4 @@ function FilterLink({ href, children, isActive }: { href: string, children: Reac
   );
 }
 
-// Component for filter links that are part of the form
-function FilterLinkInput({ name, value, currentCategory, label, isAllCategories = false }: { name: string, value: string, currentCategory: string | undefined, label: string, isAllCategories?: boolean }) {
-  const isActive = isAllCategories ? (!currentCategory || currentCategory === "All") : currentCategory === value;
-  return (
-    <label className={`block text-sm cursor-pointer hover:text-primary transition-colors ${isActive ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
-      <input type="radio" name={name} value={value} defaultChecked={isActive} className="sr-only" onChange={(e) => e.target.form?.requestSubmit()} />
-      {label}
-    </label>
-  );
-}
+// Removed FilterLinkInput from here as it's now in its own file
