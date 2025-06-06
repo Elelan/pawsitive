@@ -1,3 +1,4 @@
+
 // src/app/api/auth/signup/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
     const validation = signupSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ errors: validation.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ message: "Validation failed", errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const { name, email, password } = validation.data;
@@ -46,7 +47,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(userWithoutPassword, { status: 201 });
 
   } catch (error) {
-    console.error('Signup error:', error);
-    return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
+    console.error('Signup API error:', error); // Enhanced logging
+    let errorMessage = 'An unexpected error occurred.';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    return NextResponse.json({ message: errorMessage, details: error }, { status: 500 });
   }
 }
