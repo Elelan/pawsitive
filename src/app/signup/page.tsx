@@ -25,6 +25,7 @@ const signUpFormSchema = z.object({
   path: ["confirmPassword"], 
 });
 
+
 type SignUpFormValues = z.infer<typeof signUpFormSchema>;
 
 export default function SignUpPage() {
