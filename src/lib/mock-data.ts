@@ -1,47 +1,50 @@
-import type { Review, Order, CartItem as CartItemType, OrderItem, Product } from './types';
-// Most mock data (products, categories) is removed as it will come from MongoDB.
-// We keep mockReviews and an updated mockOrders structure.
-// initialCartItems will be empty.
+
+// src/lib/mock-data.ts
+import type { Review, Order, CartItem as CartItemType } from './types';
+// All product and category mock data is removed as it will now come from Prisma.
+// Review and Order mocks are kept for now, but data-service will use Prisma for them.
 
 export const mockReviews: Review[] = [
-  { id: 'r1', productId: 'product_id_from_db_1', userId: 'u1', userName: 'Happy Dog Owner', rating: 5, comment: 'My dog loves this food! His coat is so shiny now.', createdAt: '2023-10-01' },
-  { id: 'r2', productId: 'product_id_from_db_1', userId: 'u2', userName: 'John D.', rating: 4, comment: 'Good quality food, a bit pricey but worth it.', createdAt: '2023-09-25' },
-  { id: 'r3', productId: 'product_id_from_db_2', userId: 'u3', userName: 'CatLover22', rating: 5, comment: 'My picky cat actually eats this! Amazing!', createdAt: '2023-10-05' },
+  // These IDs should ideally match product IDs from your seeded Prisma database
+  // For now, they are placeholders.
+  { id: 'r1', productId: 'some_prisma_product_id_1', userId: 'some_prisma_user_id_1', userName: 'Happy Dog Owner', rating: 5, comment: 'My dog loves this food! His coat is so shiny now.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r2', productId: 'some_prisma_product_id_1', userId: 'some_prisma_user_id_2', userName: 'John D.', rating: 4, comment: 'Good quality food, a bit pricey but worth it.', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r3', productId: 'some_prisma_product_id_2', userId: 'some_prisma_user_id_3', userName: 'CatLover22', rating: 5, comment: 'My picky cat actually eats this! Amazing!', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
 ];
 
-// Initial cart items will now be empty. User adds items manually.
 export const initialCartItems: CartItemType[] = [];
 
-// Updated mockOrders structure to store OrderItems with product IDs
 export const mockOrders: Order[] = [
     {
-        id: 'order123', // This ID will be used for URL, keep as string
-        userId: 'user1', // Mock user ID
+        id: 'mock_order_123',
+        userId: 'some_prisma_user_id_1',
         items: [
-            // Replace with actual Product IDs from your MongoDB and details at time of purchase
-            { productId: 'REPLACE_WITH_PRODUCT_ID_1', quantity: 1, priceAtPurchase: 29.99, nameAtPurchase: 'Premium Dog Kibble - Chicken & Rice', imageUrlAtPurchase: 'https://placehold.co/600x400.png' },
-            { productId: 'REPLACE_WITH_PRODUCT_ID_3', quantity: 2, priceAtPurchase: 15.50, nameAtPurchase: 'Interactive Puzzle Feeder Toy for Dogs', imageUrlAtPurchase: 'https://placehold.co/600x400.png' },
+            { 
+              id: 'oi1', 
+              orderId: 'mock_order_123',
+              productId: 'some_prisma_product_id_1', // Replace with actual Product ID from Prisma
+              quantity: 1, 
+              priceAtPurchase: 29.99, 
+              nameAtPurchase: 'Premium Dog Kibble - Chicken & Rice', 
+              imageUrlAtPurchase: 'https://placehold.co/600x400.png' 
+            },
+            { 
+              id: 'oi2',
+              orderId: 'mock_order_123',
+              productId: 'some_prisma_product_id_3', // Replace with actual Product ID from Prisma
+              quantity: 2, 
+              priceAtPurchase: 15.50, 
+              nameAtPurchase: 'Interactive Puzzle Feeder Toy for Dogs', 
+              imageUrlAtPurchase: 'https://placehold.co/600x400.png'
+            },
         ],
-        totalAmount: 29.99 + (15.50 * 2), // Calculate based on priceAtPurchase
-        status: 'delivered',
+        totalAmount: 29.99 + (15.50 * 2),
+        status: 'DELIVERED', // Use string status consistent with Prisma schema
         shippingAddress: { street: '123 Main St', city: 'Anytown', state: 'CA', zipCode: '90210', country: 'USA', fullName: 'Happy PetOwner' },
         paymentMethod: 'Credit Card',
         createdAt: '2023-10-15T10:00:00Z',
+        updatedAt: '2023-10-15T10:00:00Z',
         trackingNumber: '1Z999AA10123456784',
     },
-    {
-        id: 'order456',
-        userId: 'user1',
-        items: [
-            { productId: 'REPLACE_WITH_PRODUCT_ID_2', quantity: 3, priceAtPurchase: 1.99, nameAtPurchase: 'Organic Salmon Cat Pâté', imageUrlAtPurchase: 'https://placehold.co/600x400.png' },
-        ],
-        totalAmount: 1.99 * 3,
-        status: 'shipped',
-        shippingAddress: { street: '456 Playful Path', city: 'Joytown', state: 'NY', zipCode: '67890', country: 'USA', fullName: 'Work Address' },
-        paymentMethod: 'PayPal',
-        createdAt: '2023-11-01T14:30:00Z',
-        trackingNumber: '1Z999AA10123456785',
-    }
 ];
-
-// Note: getSmartCartSuggestions is moved to data-service.ts and will use DB.
+// Note: getSmartCartSuggestions and other data fetching logic is now in data-service.ts using Prisma.
