@@ -6,19 +6,18 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-}
-
-model User {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  email     String    @unique
-  name      String?
-  password  String
-  role      Role      @default(USER)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  reviews   Review[]
-  orders    Order[]
-  addresses Address[]
+  // Added a comprehensive list of common Linux binary targets
+  // The error specifically mentions debian-openssl-1.1.x, so that's important.
+  // NAPI is often more portable. Musl is for Alpine Linux.
+  binaryTargets = [
+    "native", // Prisma attempts to detect the OS and download the matching engine
+    "debian-openssl-1.1.x",
+    "debian-openssl-3.0.x",
+    "rhel-openssl-1.1.x",
+    "rhel-openssl-3.0.x",
+    "linux-musl",
+    "linux-napi" // Node-API, can sometimes avoid system lib issues
+  ]
 }
 
 enum Role {
@@ -26,109 +25,138 @@ enum Role {
   ADMIN
 }
 
-model Category {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String    @unique
-  imageUrl    String?
-  description String?
-  dataAiHint  String?
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String?
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews   Review[]
+  orders    Order[]
+  addresses Address[]
 }
 
 model Product {
-  id             String        @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  description    String
-  price          Float
-  imageUrl       String
-  stock          Int
-  brand          String?
-  features       String[]      @default([])
-  dataAiHint     String?
-  petType        String[]      @default([]) // For filtering by pet type
-  rating         Float         @default(0)
-  reviewsCount   Int           @default(0) // Consider making this a derived field or updated via triggers/transactions
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  description  String
+  price        Float
+  imageUrl     String
+  stock        Int
+  rating       Float    @default(0)
+  reviewsCount Int      @default(0)
+  brand        String?
+  features     String[]
+  petType      String[] // e.g., ["dog", "cat"]
+  dataAiHint   String? // For image search suggestions
 
-  category       Category      @relation(fields: [categoryId], references: [id])
-  categoryId     String        @db.ObjectId
+  categoryId String   @db.ObjectId
+  category   Category @relation(fields: [categoryId], references: [id])
 
-  reviews        Review[]
-  orderItems     OrderItem[]
-  // variants can be modeled as a separate table or embedded if simple
-  // For simplicity, ProductVariant is not a separate model in this schema yet.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews    Review[]
+  orderItems OrderItem[]
+  variants   Json? // Simplified variant storage as JSON for now. Could be a separate model.
+                  // Example: [{ "id": "v1", "name": "Size", "value": "Large", "priceModifier": 2.00, "stock": 10, "imageUrl": "..." }]
+}
+
+model Category {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String    @unique
+  description String?
+  imageUrl    String?
+  dataAiHint  String?
+
+  products Product[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Review {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  rating     Int
-  comment    String
-  userName   String   // Denormalized for easier display; ensure consistency or fetch User.name
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  rating    Int
+  comment   String
+  userName  String // Denormalized for simplicity, or could relate to User.name
 
-  product    Product  @relation(fields: [productId], references: [id])
-  productId  String   @db.ObjectId
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id])
 
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String   @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model Order {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
-  totalAmount     Float
-  status          String        // e.g., "PENDING", "SHIPPED", "DELIVERED", "CANCELLED"
-  shippingAddress AddressEmbed // Embedded document for shipping address at time of order
-  paymentMethod   String
-  trackingNumber  String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  user            User          @relation(fields: [userId], references: [id])
-  userId          String        @db.ObjectId
-  items           OrderItem[]
-}
-
-model OrderItem {
-  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-  quantity           Int
-  priceAtPurchase    Float    // Price of one unit of the product at the time of purchase
-  nameAtPurchase     String   // Name of the product at the time of purchase
-  imageUrlAtPurchase String?  // Image URL of the product at the time of purchase
-
-  order              Order    @relation(fields: [orderId], references: [id])
-  orderId            String   @db.ObjectId
-
-  product            Product  @relation(fields: [productId], references: [id])
-  productId          String   @db.ObjectId // Refers to the Product ID
-}
-
-// Type for embedding address information directly within Order documents
-type AddressEmbed {
+// For user-managed addresses (e.g., in account settings)
+model Address {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   street    String
   city      String
   state     String
   zipCode   String
   country   String
-  fullName  String?
+  fullName  String? // e.g., "Home", "Work", or person's name for the address
   phoneNumber String?
+  isDefault Boolean  @default(false)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
-// Separate model for user-manageable addresses
-model Address {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+// For embedding shipping address directly into an Order.
+// This preserves the address at the time of order, even if the user later deletes/updates their saved addresses.
+type AddressEmbed {
   street      String
   city        String
   state       String
   zipCode     String
   country     String
-  fullName    String? // e.g., "Home", "Work"
+  fullName    String?
   phoneNumber String?
-  isDefault   Boolean  @default(false)
+}
 
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String   @db.ObjectId
+model Order {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  totalAmount     Float
+  status          String        // e.g., "PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"
+  shippingAddress AddressEmbed? // Embedded address
+  paymentMethod   String?
+  trackingNumber  String?
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  quantity  Int
+  priceAtPurchase Float // Price of the product at the time of order
+  nameAtPurchase String // Name of the product at the time of order
+  imageUrlAtPurchase String? // Image URL of product at time of order
+
+  orderId String @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  productId String  @db.ObjectId
+  // No direct relation to Product to avoid issues if product is deleted/modified
+  // Instead, productId is stored for reference. Details are captured in name/price/imageUrlAtPurchase.
+
+  @@index([orderId])
+  @@index([productId])
 }
