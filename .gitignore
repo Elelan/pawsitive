@@ -1,45 +1,61 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+.pnp.js
+.yarn/install-state.gz
 
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# vercel
-.vercel
-
-# typescript
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-.genkit/*
-.env*
+# Next.js
+/.next/
+/out/
 
-# firebase
+# Production
+/build
+
+# Misc
+.DS_Store
+*.pem
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Firebase
 firebase-debug.log
-firestore-debug.log
+# Important: If you are using Firebase Functions, uncomment the next line
+# functions/node_modules/
+# Important: If you are using Firebase Hosting with backend functions, uncomment the next line
+# .firebase/
+
+# Vercel
+.vercel
+
+# Netlify
+.netlify
+
+# Docusaurus
+.docusaurus
+
+# Gatsby
+.cache/
+public
+
+# Eleventy
+_site
+
+# Svelte
+.svelte-kit
+
+# Prisma
+prisma/migrations
+prisma/dev.db
+prisma/dev.db-journal
+*.sqlite
+*.sqlite-journal

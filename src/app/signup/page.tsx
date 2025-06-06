@@ -2,28 +2,67 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PawPrint, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+
+const signUpFormSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"], // path of error
+});
+
+type SignUpFormValues = z.infer<typeof signUpFormSchema>;
 
 export default function SignUpPage() {
-  const { login, loading, currentUser } = useAuth(); // Using login to simulate signup and login
+  const { signup, loading: authLoading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (loading) {
+  const { register, handleSubmit, formState: { errors } } = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpFormSchema),
+  });
+
+  if (authLoading) {
     return <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">Loading...</div>;
   }
 
-  if (currentUser) {
-    router.push('/account'); // Redirect if already logged in
+  if (isAuthenticated) {
+    router.push('/account');
     return null;
   }
 
-  // Simplified signup: just logs in as a user
-  const handleSignUpAsUser = () => {
-    login('user', 'newuser@pawsitive.com'); // Mock email
+  const onSubmit: SubmitHandler<SignUpFormValues> = async (data) => {
+    setIsSubmitting(true);
+    const user = await signup({ name: data.name, email: data.email, password: data.password });
+    setIsSubmitting(false);
+    if (user) {
+      toast({
+        title: 'Account Created!',
+        description: 'Welcome to Pawsitive Cart. You are now logged in.',
+      });
+      // Redirect is handled by useAuth after successful login (which signup calls)
+    } else {
+      toast({
+        title: 'Sign Up Failed',
+        description: 'Could not create your account. The email might already be in use or an error occurred.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -34,13 +73,56 @@ export default function SignUpPage() {
           <CardTitle className="text-3xl font-bold">Create Your Account</CardTitle>
           <CardDescription>Join Pawsitive Cart and give your pet the best!</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-            {/* Removed traditional form for mock signup */}
-            <Button onClick={handleSignUpAsUser} className="w-full" size="lg">
-                <UserPlus className="mr-2 h-5 w-5" /> Sign Up as User
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input 
+                id="name" 
+                placeholder="Your Name" 
+                {...register('name')} 
+                aria-invalid={errors.name ? "true" : "false"}
+              />
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="you@example.com" 
+                {...register('email')} 
+                aria-invalid={errors.email ? "true" : "false"}
+              />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="••••••••" 
+                {...register('password')} 
+                aria-invalid={errors.password ? "true" : "false"}
+              />
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input 
+                id="confirmPassword" 
+                type="password" 
+                placeholder="••••••••" 
+                {...register('confirmPassword')} 
+                aria-invalid={errors.confirmPassword ? "true" : "false"}
+              />
+              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+            </div>
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || authLoading}>
+              <UserPlus className="mr-2 h-5 w-5" /> {isSubmitting ? 'Creating Account...' : 'Sign Up'}
             </Button>
-            {/* In a real app, you'd have input fields for name, email, password etc. */}
-        </CardContent>
+          </CardContent>
+        </form>
         <CardFooter className="flex flex-col items-center space-y-2">
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}

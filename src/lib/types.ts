@@ -1,14 +1,22 @@
-import type { ObjectId } from 'mongodb';
+import type { ObjectId as MongoObjectId } from 'mongodb'; // Keep for existing data-service
+import type { User as PrismaUser, Role as PrismaRole } from '@prisma/client';
+
+// MongoDB ObjectId (used by direct driver in data-service.ts)
+export type { MongoObjectId };
+
+// Prisma generated types (to be used with new Prisma-based services)
+export type { PrismaUser, PrismaRole };
+
 
 export interface Product {
-  _id?: ObjectId; // MongoDB primary key
-  id: string; // String version of _id, used in frontend
+  _id?: MongoObjectId; // MongoDB primary key for direct driver
+  id: string; // String version of _id, used in frontend. For Prisma, this will be from PrismaUser.id
   name: string;
   description: string;
   price: number;
   imageUrl: string;
-  category: string; // Should ideally be categoryId (string) linking to Categories collection
-  categoryId?: string; // Store category ID for better relational data
+  category: string; 
+  categoryId?: string; 
   petType: PetType[];
   rating: number;
   reviewsCount: number;
@@ -20,10 +28,10 @@ export interface Product {
 }
 
 export interface ProductVariant {
-  id: string; // Could be a simple identifier or unique within product
-  name: string; // e.g. "Size", "Color"
-  value: string; // e.g. "Large", "Red"
-  priceModifier?: number; // +5 or -2 from base price
+  id: string; 
+  name: string; 
+  value: string; 
+  priceModifier?: number; 
   stock?: number;
   imageUrl?: string;
 }
@@ -31,8 +39,8 @@ export interface ProductVariant {
 export type PetType = 'dog' | 'cat' | 'bird' | 'fish' | 'small_animal' | 'reptile';
 
 export interface Category {
-  _id?: ObjectId; // MongoDB primary key
-  id: string; // String version of _id, used in frontend
+  _id?: MongoObjectId; 
+  id: string; 
   name: string;
   imageUrl?: string;
   description?: string;
@@ -50,35 +58,33 @@ export interface Review {
 }
 
 export interface CartItem {
-  product: Product; // For display, but could be just productId for storage
+  product: Product; 
   productId: string;
   quantity: number;
-  variantId?: string; // If product has variants
+  variantId?: string; 
 }
 
 export interface Order {
-  _id?: ObjectId;
+  _id?: MongoObjectId;
   id: string;
-  userId: string; // ID of the user who placed the order
-  items: OrderItem[]; // Changed from CartItem[] to OrderItem[]
+  userId: string; 
+  items: OrderItem[]; 
   totalAmount: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shippingAddress: Address;
   billingAddress?: Address;
-  paymentMethod: string; // e.g. "Credit Card", "PayPal"
-  createdAt: string; // ISO Date string
-  updatedAt?: string; // ISO Date string
+  paymentMethod: string; 
+  createdAt: string; 
+  updatedAt?: string; 
   trackingNumber?: string;
 }
 
 export interface OrderItem {
   productId: string;
   quantity: number;
-  priceAtPurchase: number; // Price of the product when the order was placed
-  nameAtPurchase: string; // Name of product when order was placed
-  imageUrlAtPurchase?: string; // Image URL when order was placed
-  // You might want to store a snapshot of product details at time of purchase
-  // or fetch current product details for display, handling cases where product might change/be deleted.
+  priceAtPurchase: number; 
+  nameAtPurchase: string; 
+  imageUrlAtPurchase?: string; 
 }
 
 
@@ -92,11 +98,10 @@ export interface Address {
   phoneNumber?: string;
 }
 
-export interface UserProfile {
-  _id?: ObjectId;
+// This AuthUser is for the useAuth hook context
+export interface AuthUser {
   id: string;
   email: string;
-  name: string;
-  shippingAddresses: Address[];
-  orderHistoryIds?: string[]; // Store Order IDs
+  name: string | null;
+  role: PrismaRole; // Using Prisma's Role enum
 }
