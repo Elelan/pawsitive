@@ -1,7 +1,10 @@
+
 import { MongoClient, Db, ServerApiVersion } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
+  throw new Error(
+    'Invalid/Missing environment variable: "MONGODB_URI". Please ensure it is set in your .env.local file in the root of your project.'
+  );
 }
 // MONGODB_DB_NAME is optional, can be specified in URI or here.
 // If specified here, it overrides the one in URI if present.
@@ -53,7 +56,7 @@ export async function getDb(databaseName?: string): Promise<Db> {
   const dbToUse = databaseName || process.env.MONGODB_DB_NAME;
   if (!dbToUse && !mongoClient.options.dbName) {
      throw new Error(
-      'MongoDB database name not found. Please set MONGODB_DB_NAME environment variable or include it in your MONGODB_URI, or pass it to getDb().'
+      'MongoDB database name not found. Please set MONGODB_DB_NAME environment variable (in .env.local) or include it in your MONGODB_URI, or pass it to getDb().'
     );
   }
   return mongoClient.db(dbToUse);
