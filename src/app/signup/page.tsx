@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PawPrint, UserPlus, Loader2 } from 'lucide-react'; // Added Loader2
+import { PawPrint, UserPlus, Loader2 } from 'lucide-react'; 
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -22,7 +22,7 @@ const signUpFormSchema = z.object({
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
-  path: ["confirmPassword"], // path of error
+  path: ["confirmPassword"], 
 });
 
 type SignUpFormValues = z.infer<typeof signUpFormSchema>;
@@ -33,11 +33,10 @@ export default function SignUpPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<SignUpFormValues>({
+  const { register, handleSubmit, formState: { errors }, setError } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpFormSchema),
   });
 
-  // This authLoading is for the initial check by useAuth to see if a user is already logged in.
   if (authLoading) {
     return (
       <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
@@ -54,21 +53,36 @@ export default function SignUpPage() {
 
   const onSubmit: SubmitHandler<SignUpFormValues> = async (data) => {
     setIsSubmitting(true);
-    const user = await signup({ name: data.name, email: data.email, password: data.password });
+    const result = await signup({ name: data.name, email: data.email, password: data.password });
     setIsSubmitting(false);
-    if (user) {
+
+    if (result.user) {
       toast({
         title: 'Account Created!',
         description: 'Welcome to Pawsitive Cart. You are now logged in.',
       });
-      // Redirect is handled by useAuth after successful login (which signup calls)
+      // Redirect is handled by useAuth's login method after successful signup
     } else {
-      // Error message from API (e.g. email already exists) or generic error
-      // The API should return specific error messages if possible, which can be displayed here.
-      // For now, the toast is generic.
+      let toastMessage = 'Could not create your account. Please try again.';
+      if (typeof result.error === 'string') {
+        toastMessage = result.error;
+      } else if (typeof result.error === 'object') {
+        // If the error object has field-specific messages (like from validation or P2002)
+        const fieldErrors = Object.values(result.error).flat();
+        if (fieldErrors.length > 0) {
+          toastMessage = fieldErrors.join(' ');
+           // Set form errors for specific fields if possible
+           Object.entries(result.error).forEach(([field, messages]) => {
+            if (field === 'email' || field === 'name' || field === 'password') { // Add other fields if your API returns them
+              setError(field as keyof SignUpFormValues, { type: 'manual', message: (messages as string[]).join(' ') });
+            }
+          });
+        }
+      }
+      
       toast({
         title: 'Sign Up Failed',
-        description: 'Could not create your account. The email might already be in use, or an unexpected error occurred. Please try again.',
+        description: toastMessage,
         variant: 'destructive',
       });
     }
@@ -131,7 +145,7 @@ export default function SignUpPage() {
               />
               {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
             </div>
-            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || authLoading}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
