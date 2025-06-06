@@ -16,7 +16,7 @@ generator client {
     "rhel-openssl-1.1.x",
     "rhel-openssl-3.0.x",
     "linux-musl",
-    "linux-napi" // Node-API, can sometimes avoid system lib issues
+    "linux-napi"
   ]
 }
 
