@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchCurrentUser]);
 
   const login = async (credentials: { email: string; password: string }): Promise<AuthUser | null> => {
-    setLoading(true);
+    // setLoading(true); // Removed: Page component will handle its own submission loading state
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -59,10 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push(user.role === PrismaRole.ADMIN ? '/admin' : '/account');
         return user as AuthUser;
       } else {
-        // Handle login errors (e.g., display message to user)
         const errorData = await response.json();
         console.error("Login failed:", errorData.message);
-        setCurrentUser(null); // Ensure user is null on failed login
+        setCurrentUser(null); 
         return null;
       }
     } catch (error) {
@@ -70,12 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentUser(null);
       return null;
     } finally {
-      setLoading(false);
+      // setLoading(false); // Removed
     }
   };
 
   const signup = async (details: { name: string; email: string; password: string }): Promise<AuthUser | null> => {
-    setLoading(true);
+    // setLoading(true); // Removed: Page component will handle its own submission loading state
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -83,12 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(details),
       });
       if (response.ok) {
-        const user = await response.json();
+        // const user = await response.json(); // User data from signup response
         // After successful signup, proceed to login to establish session via cookie
-        const loginResponse = await login({email: user.email, password: details.password});
-        return loginResponse; // Return the user from login response (which sets current user)
+        const loginResponse = await login({email: details.email, password: details.password});
+        return loginResponse; 
       } else {
-        // Handle signup errors
         const errorData = await response.json();
         console.error("Signup failed:", errorData.message || errorData.errors);
         return null;
@@ -97,19 +95,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Signup request error:", error);
       return null;
     } finally {
-      setLoading(false);
+      // setLoading(false); // Removed
     }
   };
 
   const logout = async () => {
-    setLoading(true);
+    // setLoading(true); // No need to set loading for logout in the same way
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error("Logout request error:", error);
     } finally {
       setCurrentUser(null);
-      setLoading(false);
+      // setLoading(false);
       router.push('/');
     }
   };

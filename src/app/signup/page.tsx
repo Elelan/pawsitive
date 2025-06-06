@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PawPrint, UserPlus } from 'lucide-react';
+import { PawPrint, UserPlus, Loader2 } from 'lucide-react'; // Added Loader2
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -37,8 +37,14 @@ export default function SignUpPage() {
     resolver: zodResolver(signUpFormSchema),
   });
 
+  // This authLoading is for the initial check by useAuth to see if a user is already logged in.
   if (authLoading) {
-    return <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">Loading...</div>;
+    return (
+      <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <span className="ml-4 text-lg">Loading...</span>
+      </div>
+    );
   }
 
   if (isAuthenticated) {
@@ -57,9 +63,12 @@ export default function SignUpPage() {
       });
       // Redirect is handled by useAuth after successful login (which signup calls)
     } else {
+      // Error message from API (e.g. email already exists) or generic error
+      // The API should return specific error messages if possible, which can be displayed here.
+      // For now, the toast is generic.
       toast({
         title: 'Sign Up Failed',
-        description: 'Could not create your account. The email might already be in use or an error occurred.',
+        description: 'Could not create your account. The email might already be in use, or an unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
     }
@@ -82,6 +91,7 @@ export default function SignUpPage() {
                 placeholder="Your Name" 
                 {...register('name')} 
                 aria-invalid={errors.name ? "true" : "false"}
+                disabled={isSubmitting}
               />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
@@ -93,6 +103,7 @@ export default function SignUpPage() {
                 placeholder="you@example.com" 
                 {...register('email')} 
                 aria-invalid={errors.email ? "true" : "false"}
+                disabled={isSubmitting}
               />
               {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
@@ -104,6 +115,7 @@ export default function SignUpPage() {
                 placeholder="••••••••" 
                 {...register('password')} 
                 aria-invalid={errors.password ? "true" : "false"}
+                disabled={isSubmitting}
               />
               {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
             </div>
@@ -115,11 +127,21 @@ export default function SignUpPage() {
                 placeholder="••••••••" 
                 {...register('confirmPassword')} 
                 aria-invalid={errors.confirmPassword ? "true" : "false"}
+                disabled={isSubmitting}
               />
               {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
             </div>
-            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || authLoading}>
-              <UserPlus className="mr-2 h-5 w-5" /> {isSubmitting ? 'Creating Account...' : 'Sign Up'}
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="mr-2 h-5 w-5" /> Sign Up
+                </>
+              )}
             </Button>
           </CardContent>
         </form>
